@@ -1,5 +1,5 @@
 services:
     vkr_s3_uploader.s3_uploader:
-        class: VKR\WebUploaderBundle\Services\S3Uploader
+        class: VKR\S3UploaderBundle\Services\S3Uploader
         arguments:
             - "@vkr_settings.settings_retriever"
