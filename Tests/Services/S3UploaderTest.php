@@ -10,6 +10,8 @@ use VKR\SettingsBundle\Services\SettingsRetriever;
 
 class S3UploaderTest extends \PHPUnit_Framework_TestCase
 {
+    private $defaultFilename = 'test.txt';
+
     protected $settings = [
         's3_publishable_key' => 'my_key',
         's3_secret_key' => 'my_secret',
@@ -72,7 +74,19 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
         $newFileUrl = $this->s3Uploader->setFile($file, null, false)->upload();
     }
 
-    protected function mockSettingsRetriever()
+    public function testWithNonAllowableCharactersInFilename()
+    {
+        $this->settings['upload_url'] = 'https://s3-us-west-2.amazonaws.com/my-test-bucket/my-folder/';
+        $this->s3Uploader->setUploadDir('upload_url');
+        $this->defaultFilename = 'te&st+.txt';
+        $file = $this->mockFile();
+        $this->s3Uploader->setFile($file, null, false)->upload();
+        $expectedUrl = $this->settings['upload_url'] . 'test.txt';
+        $newFile = $this->s3Uploader->getUploadDir() . '/' . $this->s3Uploader->getNewFilename();
+        $this->assertEquals($expectedUrl, $newFile);
+    }
+
+    private function mockSettingsRetriever()
     {
         $this->settingsRetriever = $this
             ->getMockBuilder(SettingsRetriever::class)
@@ -83,7 +97,7 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnCallback([$this, 'getSettingCallback']));
     }
 
-    protected function mockS3Decorator()
+    private function mockS3Decorator()
     {
         $this->s3Decorator = $this
             ->getMockBuilder(S3ClientDecorator::class)
@@ -94,7 +108,7 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue($this->s3Client));
     }
 
-    protected function mockS3Client()
+    private function mockS3Client()
     {
         $this->s3Client = $this
             ->getMockBuilder(S3Client::class)
@@ -102,7 +116,7 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
             ->getMock();
     }
 
-    protected function mockFile()
+    private function mockFile()
     {
         $file = $this
             ->getMockBuilder(File::class)
@@ -121,7 +135,7 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
 
     public function fileGetNameCallback()
     {
-        return 'test.txt';
+        return $this->defaultFilename;
     }
 
 }

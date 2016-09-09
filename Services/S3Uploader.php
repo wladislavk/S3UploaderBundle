@@ -50,6 +50,7 @@ class S3Uploader extends AbstractUploader
      */
     public function upload()
     {
+        $this->filename = $this->modifyFilename($this->filename);
         $s3URLData = $this->parseS3URL($this->uploadURL);
         $newFilenameWithDir = $s3URLData['dir'] . '/' . $this->filename;
         $s3key = $this->settingsRetriever->get('s3_publishable_key');
@@ -63,7 +64,7 @@ class S3Uploader extends AbstractUploader
         } else {
             $s3v2 = S3Client::factory($config);
         }
-        $result = $s3v2->putObject([
+        $s3v2->putObject([
             'Bucket' => $s3URLData['bucket'],
             'Key' => $newFilenameWithDir,
             'SourceFile' => $this->file->getRealPath(),
@@ -75,6 +76,13 @@ class S3Uploader extends AbstractUploader
         return $this;
     }
 
+    private function modifyFilename($filename)
+    {
+        // according to the list from http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
+        $unsupportedCharacters = '&$@=;:+,?{}^%`[]~<>#|\\"';
+        return str_replace(str_split($unsupportedCharacters), '', $filename);
+    }
+
     /**
      * Parses external URL for file storing into host, bucket and dir.
      *
@@ -82,7 +90,7 @@ class S3Uploader extends AbstractUploader
      * @return array
      * @throws S3BucketDoesNotExistException
      */
-    protected function parseS3URL($url)
+    private function parseS3URL($url)
     {
         $parsedData = [];
         $regexp = '/^http(?:s)?:\/\/(s3.+?)\/(.+?)\/(.+?)\/?$/i';
