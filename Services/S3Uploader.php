@@ -17,7 +17,7 @@ class S3Uploader extends AbstractUploader
     /**
      * @var null|S3ClientDecorator
      */
-    protected $s3ClientDecorator;
+    private $s3ClientDecorator;
 
     /**
      * @param SettingsRetriever|null $settingsRetriever

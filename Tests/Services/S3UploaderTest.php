@@ -3,46 +3,33 @@ namespace VKR\S3UploaderBundle\Tests\Services;
 
 use Aws\CloudTrail\Exception\S3BucketDoesNotExistException;
 use Aws\S3\S3Client;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\File;
 use VKR\S3UploaderBundle\Decorators\S3ClientDecorator;
 use VKR\S3UploaderBundle\Services\S3Uploader;
 use VKR\SettingsBundle\Services\SettingsRetriever;
 
-class S3UploaderTest extends \PHPUnit_Framework_TestCase
+class S3UploaderTest extends TestCase
 {
-    private $defaultFilename = 'test.txt';
+    private $defaultFilename;
 
-    protected $settings = [
+    private $settings = [
         's3_publishable_key' => 'my_key',
         's3_secret_key' => 'my_secret',
     ];
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $settingsRetriever;
-
-    /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $s3Decorator;
-
-    /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $s3Client;
-
-    /**
      * @var S3Uploader
      */
-    protected $s3Uploader;
+    private $s3Uploader;
 
     public function setUp()
     {
-        $this->mockS3Client();
-        $this->mockS3Decorator();
-        $this->mockSettingsRetriever();
-        $this->s3Uploader = new S3Uploader($this->settingsRetriever, [], null, $this->s3Decorator);
+        $this->defaultFilename = 'test.txt';
+
+        $s3Decorator = $this->mockS3Decorator();
+        $settingsRetriever = $this->mockSettingsRetriever();
+        $this->s3Uploader = new S3Uploader($settingsRetriever, [], null, $s3Decorator);
     }
 
     public function testUploadUrl()
@@ -61,8 +48,9 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
         $this->settings['upload_url'] = 'https://s3-us-west-2.amazonaws.com/my-test-bucket/';
         $this->s3Uploader->setUploadDir('upload_url');
         $file = $this->mockFile();
-        $this->setExpectedException(S3BucketDoesNotExistException::class, 'Upload directory is not a valid S3 bucket');
-        $newFileUrl = $this->s3Uploader->setFile($file, null, false)->upload();
+        $this->expectException(S3BucketDoesNotExistException::class);
+        $this->expectExceptionMessage('Upload directory is not a valid S3 bucket');
+        $this->s3Uploader->setFile($file, null, false)->upload();
     }
 
     public function testNonS3Url()
@@ -70,8 +58,9 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
         $this->settings['upload_url'] = 'https://ec2-us-west-2.amazonaws.com/my-test-bucket/my-folder/';
         $this->s3Uploader->setUploadDir('upload_url');
         $file = $this->mockFile();
-        $this->setExpectedException(S3BucketDoesNotExistException::class, 'Upload directory is not a valid S3 bucket');
-        $newFileUrl = $this->s3Uploader->setFile($file, null, false)->upload();
+        $this->expectException(S3BucketDoesNotExistException::class);
+        $this->expectExceptionMessage('Upload directory is not a valid S3 bucket');
+        $this->s3Uploader->setFile($file, null, false)->upload();
     }
 
     public function testWithNonAllowableCharactersInFilename()
@@ -88,43 +77,28 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
 
     private function mockSettingsRetriever()
     {
-        $this->settingsRetriever = $this
-            ->getMockBuilder(SettingsRetriever::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->settingsRetriever->expects($this->any())
-            ->method('get')
-            ->will($this->returnCallback([$this, 'getSettingCallback']));
+        $settingsRetriever = $this->createMock(SettingsRetriever::class);
+        $settingsRetriever->method('get')->will($this->returnCallback([$this, 'getSettingCallback']));
+        return $settingsRetriever;
     }
 
     private function mockS3Decorator()
     {
-        $this->s3Decorator = $this
-            ->getMockBuilder(S3ClientDecorator::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->s3Decorator->expects($this->any())
-            ->method('factory')
-            ->will($this->returnValue($this->s3Client));
+        $s3Decorator = $this->createMock(S3ClientDecorator::class);
+        $s3Decorator->method('factory')->willReturn($this->mockS3Client());
+        return $s3Decorator;
     }
 
     private function mockS3Client()
     {
-        $this->s3Client = $this
-            ->getMockBuilder(S3Client::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $s3Client = $this->createMock(S3Client::class);
+        return $s3Client;
     }
 
     private function mockFile()
     {
-        $file = $this
-            ->getMockBuilder(File::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $file->expects($this->any())
-            ->method('getFilename')
-            ->will($this->returnCallback([$this, 'fileGetNameCallback']));
+        $file = $this->createMock(File::class);
+        $file->method('getFilename')->willReturnCallback([$this, 'fileGetNameCallback']);
         return $file;
     }
 
@@ -137,5 +111,4 @@ class S3UploaderTest extends \PHPUnit_Framework_TestCase
     {
         return $this->defaultFilename;
     }
-
 }
