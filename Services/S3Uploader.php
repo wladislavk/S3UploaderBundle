@@ -53,12 +53,7 @@ class S3Uploader extends AbstractUploader
         $this->filename = $this->modifyFilename($this->filename);
         $s3URLData = $this->parseS3URL($this->uploadURL);
         $newFilenameWithDir = $s3URLData['dir'] . '/' . $this->filename;
-        $s3key = $this->settingsRetriever->get('s3_publishable_key');
-        $s3secret = $this->settingsRetriever->get('s3_secret_key');
-        $config = [
-            'key' => $s3key,
-            'secret' => $s3secret,
-        ];
+        $config = $this->getConfig();
         if ($this->s3ClientDecorator) {
             $s3v2 = $this->s3ClientDecorator->factory($config);
         } else {
@@ -74,6 +69,20 @@ class S3Uploader extends AbstractUploader
             'Key' => $newFilenameWithDir,
         ]);
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getConfig()
+    {
+        $s3key = $this->settingsRetriever->get('s3_publishable_key');
+        $s3secret = $this->settingsRetriever->get('s3_secret_key');
+        $config = [
+            'key' => $s3key,
+            'secret' => $s3secret,
+        ];
+        return $config;
     }
 
     private function modifyFilename($filename)

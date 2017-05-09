@@ -78,7 +78,7 @@ class S3UploaderTest extends TestCase
     private function mockSettingsRetriever()
     {
         $settingsRetriever = $this->createMock(SettingsRetriever::class);
-        $settingsRetriever->method('get')->will($this->returnCallback([$this, 'getSettingCallback']));
+        $settingsRetriever->method('get')->willReturnCallback([$this, 'getSettingCallback']);
         return $settingsRetriever;
     }
 
